@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -5,32 +6,28 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from datetime import datetime
 import uuid
-import config
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = FastAPI()
 
-# =========================
-# CORS
-# =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],  # allow Vercel + local
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# =========================
-# DynamoDB
-# =========================
 dynamodb = boto3.resource(
     "dynamodb",
-    region_name=config.REGION_NAME,
-    aws_access_key_id=config.AWS_ACCESS_KEY,
-    aws_secret_access_key=config.AWS_SECRET_KEY,
+    region_name=os.environ["REGION_NAME"],
+    aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
+    aws_secret_access_key=os.environ["AWS_SECRET_KEY"],
 )
 
-table = dynamodb.Table(config.TABLE_NAME)
+table = dynamodb.Table(os.environ["TABLE_NAME"])
 
 # =========================
 # Models
