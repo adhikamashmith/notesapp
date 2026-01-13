@@ -1,0 +1,15 @@
+# Backend secrets
+backend/config.py
+
+# Node modules
+frontend/node_modules
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Env files
+*.env
+
+# Logs
+*.log
