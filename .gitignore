@@ -1,5 +1,6 @@
-# Backend secrets
+# backend/.gitignore
 backend/config.py
+
 
 # Node modules
 frontend/node_modules
