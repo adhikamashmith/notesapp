@@ -1,51 +1,77 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+
 const App = () => {
+  // -------------------------
+  // GLOBAL STATE
+  // -------------------------
+  const [allNotes, setAllNotes] = useState([]);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // -------------------------
   // CREATE
+  // -------------------------
   const [userId, setUserId] = useState("");
   const [noteId, setNoteId] = useState("");
   const [content, setContent] = useState("");
 
+  // -------------------------
   // READ
-  const [allNotes, setAllNotes] = useState([]);
+  // -------------------------
   const [getUserId, setGetUserId] = useState("");
   const [getNoteId, setGetNoteId] = useState("");
-  const [results, setResults] = useState([]);
 
-  // DELETE
-  const [delUserId, setDelUserId] = useState("");
-  const [delNoteId, setDelNoteId] = useState("");
-
+  // -------------------------
   // UPDATE
+  // -------------------------
   const [updateUserId, setUpdateUserId] = useState("");
   const [updateNoteId, setUpdateNoteId] = useState("");
   const [updateContent, setUpdateContent] = useState("");
 
   // -------------------------
-  // FETCH ALL
+  // DELETE
   // -------------------------
-  const fetchAllNotes = async () => {
+  const [delUserId, setDelUserId] = useState("");
+  const [delNoteId, setDelNoteId] = useState("");
+
+  // -------------------------
+  // FETCH ALL NOTES
+  // -------------------------
+  const fetchAllNotes = useCallback(async () => {
     try {
+      setLoading(true);
+      setError("");
       const res = await axios.get(`${API_URL}/notes`);
       setAllNotes(res.data);
     } catch {
-      alert("Failed to fetch notes");
+      setError("Failed to fetch notes");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllNotes();
+  }, [fetchAllNotes]);
 
   // -------------------------
-  // CREATE
+  // CREATE NOTE
   // -------------------------
   const addNote = async () => {
     if (!userId || !noteId || !content) {
-      alert("Fill all fields");
+      setError("All fields are required");
       return;
     }
 
     try {
+      setLoading(true);
+      setError("");
+
       await axios.post(`${API_URL}/notes`, {
         userId,
         noteId,
@@ -55,65 +81,82 @@ const App = () => {
       setUserId("");
       setNoteId("");
       setContent("");
+      setResults([]);
       fetchAllNotes();
     } catch {
-      alert("Failed to add note");
+      setError("Failed to add note");
+    } finally {
+      setLoading(false);
     }
   };
 
   // -------------------------
-  // GET BY USER
+  // GET NOTES BY USER
   // -------------------------
   const getByUserId = async () => {
     if (!getUserId) return;
 
     try {
+      setLoading(true);
+      setError("");
+
       const res = await axios.get(`${API_URL}/notes/${getUserId}`);
       setResults(res.data);
     } catch {
-      alert("Failed to fetch notes");
+      setError("Failed to fetch notes");
+    } finally {
+      setLoading(false);
     }
   };
 
   // -------------------------
-  // GET SPECIFIC
+  // GET SPECIFIC NOTE
   // -------------------------
   const getSpecificNote = async () => {
     if (!getUserId || !getNoteId) return;
 
     try {
+      setLoading(true);
+      setError("");
+
       const res = await axios.get(
         `${API_URL}/notes/${getUserId}/${getNoteId}`
       );
       setResults([res.data]);
     } catch {
-      alert("Note not found");
+      setError("Note not found");
+    } finally {
+      setLoading(false);
     }
   };
 
   // -------------------------
-  // UPDATE
+  // UPDATE NOTE
   // -------------------------
   const updateNote = async () => {
     if (!updateUserId || !updateNoteId || !updateContent) {
-      alert("Fill all update fields");
+      setError("All update fields are required");
       return;
     }
 
     try {
+      setLoading(true);
+      setError("");
+
       await axios.put(
         `${API_URL}/notes/${updateUserId}/${updateNoteId}`,
         { content: updateContent }
       );
 
-      alert("Note updated successfully");
-
       setUpdateUserId("");
       setUpdateNoteId("");
       setUpdateContent("");
+      setResults([]);
       fetchAllNotes();
     } catch {
-      alert("Note not found or update failed");
+      setError("Update failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -124,43 +167,53 @@ const App = () => {
     if (!delUserId) return;
 
     try {
-      const res = await axios.get(`${API_URL}/notes/${delUserId}`);
-      for (let note of res.data) {
-        await axios.delete(
-          `${API_URL}/notes/${delUserId}/${note.noteId}`
-        );
-      }
-      fetchAllNotes();
+      setLoading(true);
+      setError("");
+
+      await axios.delete(`${API_URL}/notes/${delUserId}`);
+      setDelUserId("");
       setResults([]);
+      fetchAllNotes();
     } catch {
-      alert("Delete failed");
+      setError("Delete failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   // -------------------------
-  // DELETE SPECIFIC
+  // DELETE SPECIFIC NOTE
   // -------------------------
   const deleteSpecificNote = async () => {
     if (!delUserId || !delNoteId) return;
 
     try {
+      setLoading(true);
+      setError("");
+
       await axios.delete(
         `${API_URL}/notes/${delUserId}/${delNoteId}`
       );
-      fetchAllNotes();
+
+      setDelNoteId("");
       setResults([]);
+      fetchAllNotes();
     } catch {
-      alert("Delete failed");
+      setError("Delete failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAllNotes();
-  }, []);
-
+  // -------------------------
+  // UI
+  // -------------------------
   return (
-    <div style={{ padding: 30, maxWidth: 800, margin: "auto" }}>
-      <h2>Notes App</h2>
+    <div style={{ padding: 30, maxWidth: 900, margin: "auto" }}>
+      <h2>📝 Notes App</h2>
+
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {/* ADD */}
       <section>
@@ -183,7 +236,7 @@ const App = () => {
         <ul>
           {allNotes.map(n => (
             <li key={`${n.userId}-${n.noteId}`}>
-              {n.userId} | {n.noteId} → {n.content}
+              <b>{n.userId}</b> | {n.noteId} → {n.content}
             </li>
           ))}
         </ul>
@@ -200,7 +253,7 @@ const App = () => {
         <ul>
           {results.map(n => (
             <li key={`${n.userId}-${n.noteId}`}>
-              {n.userId} | {n.noteId} → {n.content}
+              <b>{n.userId}</b> | {n.noteId} → {n.content}
             </li>
           ))}
         </ul>
