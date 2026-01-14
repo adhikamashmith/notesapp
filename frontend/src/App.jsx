@@ -4,86 +4,154 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const App = () => {
+  // CREATE
   const [userId, setUserId] = useState("");
   const [noteId, setNoteId] = useState("");
   const [content, setContent] = useState("");
 
+  // READ
   const [allNotes, setAllNotes] = useState([]);
-
   const [getUserId, setGetUserId] = useState("");
   const [getNoteId, setGetNoteId] = useState("");
   const [results, setResults] = useState([]);
 
+  // DELETE
   const [delUserId, setDelUserId] = useState("");
   const [delNoteId, setDelNoteId] = useState("");
 
-  // 🔹 Update states
+  // UPDATE
   const [updateUserId, setUpdateUserId] = useState("");
   const [updateNoteId, setUpdateNoteId] = useState("");
   const [updateContent, setUpdateContent] = useState("");
 
+  // -------------------------
+  // FETCH ALL
+  // -------------------------
   const fetchAllNotes = async () => {
-    const res = await axios.get(`${API_URL}/notes`);
-    setAllNotes(res.data);
+    try {
+      const res = await axios.get(`${API_URL}/notes`);
+      setAllNotes(res.data);
+    } catch {
+      alert("Failed to fetch notes");
+    }
   };
 
+  // -------------------------
+  // CREATE
+  // -------------------------
   const addNote = async () => {
-    if (!userId || !noteId || !content) return;
+    if (!userId || !noteId || !content) {
+      alert("Fill all fields");
+      return;
+    }
 
-    await axios.post(`${API_URL}/notes`, {
-      userId,
-      noteId,
-      content,
-    });
+    try {
+      await axios.post(`${API_URL}/notes`, {
+        userId,
+        noteId,
+        content,
+      });
 
-    setUserId("");
-    setNoteId("");
-    setContent("");
-    fetchAllNotes();
+      setUserId("");
+      setNoteId("");
+      setContent("");
+      fetchAllNotes();
+    } catch {
+      alert("Failed to add note");
+    }
   };
 
+  // -------------------------
+  // GET BY USER
+  // -------------------------
   const getByUserId = async () => {
     if (!getUserId) return;
-    const res = await axios.get(`${API_URL}/notes/${getUserId}`);
-    setResults(res.data);
+
+    try {
+      const res = await axios.get(`${API_URL}/notes/${getUserId}`);
+      setResults(res.data);
+    } catch {
+      alert("Failed to fetch notes");
+    }
   };
 
+  // -------------------------
+  // GET SPECIFIC
+  // -------------------------
   const getSpecificNote = async () => {
     if (!getUserId || !getNoteId) return;
-    const res = await axios.get(`${API_URL}/notes/${getUserId}/${getNoteId}`);
-    setResults([res.data]);
+
+    try {
+      const res = await axios.get(
+        `${API_URL}/notes/${getUserId}/${getNoteId}`
+      );
+      setResults([res.data]);
+    } catch {
+      alert("Note not found");
+    }
   };
 
+  // -------------------------
+  // UPDATE
+  // -------------------------
+  const updateNote = async () => {
+    if (!updateUserId || !updateNoteId || !updateContent) {
+      alert("Fill all update fields");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API_URL}/notes/${updateUserId}/${updateNoteId}`,
+        { content: updateContent }
+      );
+
+      alert("Note updated successfully");
+
+      setUpdateUserId("");
+      setUpdateNoteId("");
+      setUpdateContent("");
+      fetchAllNotes();
+    } catch {
+      alert("Note not found or update failed");
+    }
+  };
+
+  // -------------------------
+  // DELETE BY USER
+  // -------------------------
   const deleteByUserId = async () => {
     if (!delUserId) return;
-    const res = await axios.get(`${API_URL}/notes/${delUserId}`);
-    for (let note of res.data) {
-      await axios.delete(`${API_URL}/notes/${delUserId}/${note.noteId}`);
+
+    try {
+      const res = await axios.get(`${API_URL}/notes/${delUserId}`);
+      for (let note of res.data) {
+        await axios.delete(
+          `${API_URL}/notes/${delUserId}/${note.noteId}`
+        );
+      }
+      fetchAllNotes();
+      setResults([]);
+    } catch {
+      alert("Delete failed");
     }
-    fetchAllNotes();
-    setResults([]);
   };
 
+  // -------------------------
+  // DELETE SPECIFIC
+  // -------------------------
   const deleteSpecificNote = async () => {
     if (!delUserId || !delNoteId) return;
-    await axios.delete(`${API_URL}/notes/${delUserId}/${delNoteId}`);
-    fetchAllNotes();
-    setResults([]);
-  };
 
-  // 🔹 UPDATE NOTE
-  const updateNote = async () => {
-    if (!updateUserId || !updateNoteId || !updateContent) return;
-
-    await axios.put(
-      `${API_URL}/notes/${updateUserId}/${updateNoteId}`,
-      { content: updateContent }
-    );
-
-    setUpdateUserId("");
-    setUpdateNoteId("");
-    setUpdateContent("");
-    fetchAllNotes();
+    try {
+      await axios.delete(
+        `${API_URL}/notes/${delUserId}/${delNoteId}`
+      );
+      fetchAllNotes();
+      setResults([]);
+    } catch {
+      alert("Delete failed");
+    }
   };
 
   useEffect(() => {
@@ -94,25 +162,22 @@ const App = () => {
     <div style={{ padding: 30, maxWidth: 800, margin: "auto" }}>
       <h2>Notes App</h2>
 
-      {/* ADD NOTE */}
+      {/* ADD */}
       <section>
         <h3>Add Note</h3>
-        <input value={userId} onChange={e => setUserId(e.target.value)} placeholder="User ID" />
-        <input value={noteId} onChange={e => setNoteId(e.target.value)} placeholder="Note ID" />
-
-        {/* 🔹 Bigger Note Box */}
+        <input placeholder="User ID" value={userId} onChange={e => setUserId(e.target.value)} />
+        <input placeholder="Note ID" value={noteId} onChange={e => setNoteId(e.target.value)} />
         <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
           placeholder="Content"
           rows={4}
           style={{ width: "100%" }}
+          value={content}
+          onChange={e => setContent(e.target.value)}
         />
-
         <button onClick={addNote}>Add</button>
       </section>
 
-      {/* ALL NOTES */}
+      {/* ALL */}
       <section>
         <h3>All Notes</h3>
         <ul>
@@ -124,11 +189,11 @@ const App = () => {
         </ul>
       </section>
 
-      {/* GET NOTES */}
+      {/* GET */}
       <section>
         <h3>Get Notes</h3>
-        <input value={getUserId} onChange={e => setGetUserId(e.target.value)} placeholder="User ID" />
-        <input value={getNoteId} onChange={e => setGetNoteId(e.target.value)} placeholder="Note ID (optional)" />
+        <input placeholder="User ID" value={getUserId} onChange={e => setGetUserId(e.target.value)} />
+        <input placeholder="Note ID (optional)" value={getNoteId} onChange={e => setGetNoteId(e.target.value)} />
         <button onClick={getByUserId}>Get by User</button>
         <button onClick={getSpecificNote}>Get Specific</button>
 
@@ -141,28 +206,26 @@ const App = () => {
         </ul>
       </section>
 
-      {/* UPDATE NOTE */}
+      {/* UPDATE */}
       <section>
         <h3>Update Note</h3>
-        <input value={updateUserId} onChange={e => setUpdateUserId(e.target.value)} placeholder="User ID" />
-        <input value={updateNoteId} onChange={e => setUpdateNoteId(e.target.value)} placeholder="Note ID" />
-
+        <input placeholder="User ID" value={updateUserId} onChange={e => setUpdateUserId(e.target.value)} />
+        <input placeholder="Note ID" value={updateNoteId} onChange={e => setUpdateNoteId(e.target.value)} />
         <textarea
-          value={updateContent}
-          onChange={e => setUpdateContent(e.target.value)}
           placeholder="Updated Content"
           rows={4}
           style={{ width: "100%" }}
+          value={updateContent}
+          onChange={e => setUpdateContent(e.target.value)}
         />
-
         <button onClick={updateNote}>Update</button>
       </section>
 
       {/* DELETE */}
       <section>
         <h3>Delete Notes</h3>
-        <input value={delUserId} onChange={e => setDelUserId(e.target.value)} placeholder="User ID" />
-        <input value={delNoteId} onChange={e => setDelNoteId(e.target.value)} placeholder="Note ID (optional)" />
+        <input placeholder="User ID" value={delUserId} onChange={e => setDelUserId(e.target.value)} />
+        <input placeholder="Note ID (optional)" value={delNoteId} onChange={e => setDelNoteId(e.target.value)} />
         <button onClick={deleteByUserId}>Delete by User</button>
         <button onClick={deleteSpecificNote}>Delete Specific</button>
       </section>
@@ -171,4 +234,3 @@ const App = () => {
 };
 
 export default App;
-
