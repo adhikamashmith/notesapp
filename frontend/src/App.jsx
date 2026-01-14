@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-console.log(import.meta.env.VITE_API_URL);
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -17,6 +16,11 @@ const App = () => {
 
   const [delUserId, setDelUserId] = useState("");
   const [delNoteId, setDelNoteId] = useState("");
+
+  // 🔹 Update states
+  const [updateUserId, setUpdateUserId] = useState("");
+  const [updateNoteId, setUpdateNoteId] = useState("");
+  const [updateContent, setUpdateContent] = useState("");
 
   const fetchAllNotes = async () => {
     const res = await axios.get(`${API_URL}/notes`);
@@ -67,6 +71,21 @@ const App = () => {
     setResults([]);
   };
 
+  // 🔹 UPDATE NOTE
+  const updateNote = async () => {
+    if (!updateUserId || !updateNoteId || !updateContent) return;
+
+    await axios.put(
+      `${API_URL}/notes/${updateUserId}/${updateNoteId}`,
+      { content: updateContent }
+    );
+
+    setUpdateUserId("");
+    setUpdateNoteId("");
+    setUpdateContent("");
+    fetchAllNotes();
+  };
+
   useEffect(() => {
     fetchAllNotes();
   }, []);
@@ -75,14 +94,25 @@ const App = () => {
     <div style={{ padding: 30, maxWidth: 800, margin: "auto" }}>
       <h2>Notes App</h2>
 
+      {/* ADD NOTE */}
       <section>
         <h3>Add Note</h3>
         <input value={userId} onChange={e => setUserId(e.target.value)} placeholder="User ID" />
         <input value={noteId} onChange={e => setNoteId(e.target.value)} placeholder="Note ID" />
-        <input value={content} onChange={e => setContent(e.target.value)} placeholder="Content" />
+
+        {/* 🔹 Bigger Note Box */}
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          placeholder="Content"
+          rows={4}
+          style={{ width: "100%" }}
+        />
+
         <button onClick={addNote}>Add</button>
       </section>
 
+      {/* ALL NOTES */}
       <section>
         <h3>All Notes</h3>
         <ul>
@@ -94,6 +124,7 @@ const App = () => {
         </ul>
       </section>
 
+      {/* GET NOTES */}
       <section>
         <h3>Get Notes</h3>
         <input value={getUserId} onChange={e => setGetUserId(e.target.value)} placeholder="User ID" />
@@ -110,6 +141,24 @@ const App = () => {
         </ul>
       </section>
 
+      {/* UPDATE NOTE */}
+      <section>
+        <h3>Update Note</h3>
+        <input value={updateUserId} onChange={e => setUpdateUserId(e.target.value)} placeholder="User ID" />
+        <input value={updateNoteId} onChange={e => setUpdateNoteId(e.target.value)} placeholder="Note ID" />
+
+        <textarea
+          value={updateContent}
+          onChange={e => setUpdateContent(e.target.value)}
+          placeholder="Updated Content"
+          rows={4}
+          style={{ width: "100%" }}
+        />
+
+        <button onClick={updateNote}>Update</button>
+      </section>
+
+      {/* DELETE */}
       <section>
         <h3>Delete Notes</h3>
         <input value={delUserId} onChange={e => setDelUserId(e.target.value)} placeholder="User ID" />
@@ -122,3 +171,4 @@ const App = () => {
 };
 
 export default App;
+
