@@ -31,7 +31,7 @@ dynamodb = boto3.resource(
     aws_secret_access_key=os.environ["AWS_SECRET_KEY"],
 )
 
-table = dynamodb.Table(os.environ("TABLE_NAME"))
+table = dynamodb.Table(os.environ["TABLE_NAME"])
 
 # =========================
 # Models
