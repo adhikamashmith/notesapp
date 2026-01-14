@@ -1,23 +1,31 @@
 import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import uuid
+from datetime import datetime
+
 import boto3
 from boto3.dynamodb.conditions import Key
-from datetime import datetime
-import uuid
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 
+# =========================
+# App Setup
+# =========================
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow Vercel + local
+    allow_origins=["*"],   # allow frontend (Vercel / local)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# =========================
+# DynamoDB Setup
+# =========================
 dynamodb = boto3.resource(
     "dynamodb",
     region_name=os.environ["REGION_NAME"],
@@ -27,6 +35,7 @@ dynamodb = boto3.resource(
 
 table = dynamodb.Table(os.environ["TABLE_NAME"])
 
+
 # =========================
 # Models
 # =========================
@@ -35,11 +44,18 @@ class NoteCreate(BaseModel):
     noteId: str | None = None
     content: str
 
+
+class NoteUpdate(BaseModel):
+    content: str
+
+
 # =========================
 # Routes
 # =========================
 
-# Create note
+# -------------------------
+# Create Note
+# -------------------------
 @app.post("/notes")
 def add_note(note: NoteCreate):
     note_id = note.noteId or str(uuid.uuid4())
@@ -49,20 +65,25 @@ def add_note(note: NoteCreate):
         "noteId": note_id,
         "content": note.content,
         "createdAt": datetime.utcnow().isoformat(),
+        "updatedAt": datetime.utcnow().isoformat(),
     }
 
     table.put_item(Item=item)
     return item
 
 
-# Get ALL notes
+# -------------------------
+# Get ALL Notes
+# -------------------------
 @app.get("/notes")
 def get_all_notes():
     response = table.scan()
     return response.get("Items", [])
 
 
-# Get notes by userId
+# -------------------------
+# Get Notes by User
+# -------------------------
 @app.get("/notes/{user_id}")
 def get_notes_by_user(user_id: str):
     response = table.query(
@@ -71,19 +92,50 @@ def get_notes_by_user(user_id: str):
     return response.get("Items", [])
 
 
-# Get specific note
+# -------------------------
+# Get Specific Note
+# -------------------------
 @app.get("/notes/{user_id}/{note_id}")
 def get_specific_note(user_id: str, note_id: str):
     response = table.get_item(
         Key={"userId": user_id, "noteId": note_id}
     )
-    return response.get("Item", {})
+
+    if "Item" not in response:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    return response["Item"]
 
 
-# Delete specific note
+# -------------------------
+# Update Note
+# -------------------------
+@app.put("/notes/{user_id}/{note_id}")
+def update_note(user_id: str, note_id: str, note: NoteUpdate):
+    response = table.update_item(
+        Key={
+            "userId": user_id,
+            "noteId": note_id,
+        },
+        UpdateExpression="SET content = :content, updatedAt = :updatedAt",
+        ExpressionAttributeValues={
+            ":content": note.content,
+            ":updatedAt": datetime.utcnow().isoformat(),
+        },
+        ConditionExpression="attribute_exists(noteId)",
+        ReturnValues="ALL_NEW",
+    )
+
+    return response.get("Attributes", {})
+
+
+# -------------------------
+# Delete Specific Note
+# -------------------------
 @app.delete("/notes/{user_id}/{note_id}")
 def delete_note(user_id: str, note_id: str):
     table.delete_item(
         Key={"userId": user_id, "noteId": note_id}
     )
-    return {"message": "Note deleted"}
+    return {"message": "Note deleted successfully"}
+
